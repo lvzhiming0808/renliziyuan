@@ -1,0 +1,397 @@
+<template>
+  <!-- 海报页 -->
+  <view class="poster"
+        style="height: {{ pageHeight }}px;">
+    <!-- 海报 -->
+    <canvas class="poster-canvas"
+            canvas-id="poster-canvas"
+            style="height: {{ canvasHeight }}px;">
+    </canvas>
+
+    <!-- 保存海报 -->
+    <view class="poster-btns">
+      <image data-name="保存到相册"
+             src="{{ bgBtn }}"
+             hidden="{{ !drawDone }}"
+             @tap="handleSavePoster"></image>
+    </view>
+
+    <!-- 用于占满超长屏幕底部的空白 -->
+    <image class="poster-fix"
+           src="{{ bgFix }}"
+           hidden="{{ !drawDone }}"></image>
+
+    <!-- 在上面canvas的底部再绘制一些背景-拉长图片而已 -->
+    <canvas class="poster-canvas-verbose"
+            canvas-id="poster-canvas-verbose"></canvas>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import api_config from '../../apis/config';
+  import { getRank } from '../../apis/';
+  import { clipAvatar, downloadImg } from '../../utils/canvas';
+  import hasAuth from '../../utils/auth';
+  import aldEvent from '../../utils/ald';
+
+  export default class Poster extends wepy.page {
+
+    data = {
+      // 应用配置信息
+      appConfig: null,
+      // 用户信息
+      userInfo: null,
+      // 考生准考证号
+      admission: '',
+      // 页面高度
+      pageHeight: 0,
+      // canvas高度
+      canvasHeight: 0,
+      // 海报素材资源
+      posterResources: null,
+      // 临时图片路径
+      tempImgPath: '',
+      // 海报图片路径
+      posterImgPath: '',
+      // 海报绘制完成
+      drawDone: false
+    };
+
+    computed = {
+      // 按钮背景图
+      bgBtn() {
+        return this.appConfig
+          ? `${api_config.host}${this.appConfig.junior_poster_bg_btn}`
+          : '';
+      },
+      // 兼容16:9以上长宽比屏幕的底图
+      bgFix() {
+        return this.appConfig
+          ? `${api_config.host}${this.appConfig.junior_poster_bg_fix}`
+          : '';
+      }
+    };
+
+    methods = {
+      // 保存海报图
+      async handleSavePoster(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+
+        // 开启加载中
+        wepy.showLoading({ title: '保存中...', icon: 'loading' });
+
+        // 生成用于展示的海报图临时路径
+        this.tempImgPath = await this.createTempImg('poster-canvas');
+
+        // 绘制用于保存的海报图
+        this.drawPosterImg(async () => {
+          // 生成用于保存的海报图临时路径
+          this.posterImgPath = await this.createTempImg('poster-canvas-verbose');
+
+          // 将生成的海报图保存到相册
+          const result = await this.saveToAlbum();
+          wepy.hideLoading();
+
+          // 判断是否授权保存到相册
+          const hasWritePhotosAlbum = await hasAuth('writePhotosAlbum');
+
+          // 保存失败，但已授权
+          if (!result && hasWritePhotosAlbum) {
+            wepy.showToast({
+              title: '保存图片失败，请重试~',
+              icon: 'none'
+            });
+
+            return;
+          }
+
+          // 保存失败，且未授权
+          if (!result && !hasWritePhotosAlbum) {
+            wepy.showModal({
+              title: '提示',
+              content: '保存图片失败，请去设置中心重新授权',
+              showCancel: false
+            });
+
+            return;
+          }
+
+          // 保存成功
+          wepy.showToast({
+            title: '保存成功',
+            icon: 'success'
+          });
+
+        });
+
+      }
+    };
+
+    async onLoad(data, params) {
+      // 准考证号
+      this.admission = params.preload.admission;
+    }
+
+    async onReady() {
+      const { appConfig, userInfo } = this.$parent.globalData;
+
+      // 应用配置信息
+      this.appConfig = appConfig;
+
+      // 用户信息
+      this.userInfo = userInfo;
+
+      // 页面高度--全屏
+      this.pageHeight = wepy.getSystemInfoSync().windowHeight;
+
+      // 开启加载中
+      wepy.showLoading({
+        title: '拼命生成海报中',
+        icon: 'loading'
+      });
+
+      // 绘制用于展示的海报
+      this.drawTempImg();
+    }
+
+    // 拉取海报素材资源
+    async fetchResources() {
+      const resources = {};
+
+      // 大背景图
+      resources.whole = await downloadImg(`${api_config.host}${this.appConfig.junior_poster_bg_whole}`);
+
+      // 头像背景图
+      resources.avatarBg = await downloadImg(`${api_config.host}${this.appConfig.junior_poster_bg_avatar}`);
+
+      // 头像
+      resources.avatar = await downloadImg(this.userInfo.avatar);
+
+      // 皇冠
+      resources.crown = await downloadImg(`${api_config.host}${this.appConfig.junior_poster_bg_crown}`);
+
+      // 昵称
+      resources.nickname = this.userInfo.nickname || '';
+
+      // 排名
+      const { data: { rank } } = await getRank(this.admission);
+      resources.rank = rank || '';
+
+      // 加薪指数
+      resources.quota = 80 + parseInt(Math.random() * 19);
+
+      // 二维码
+      const qrcodeUrl = `${api_config.host}${api_config.prefix}/open/qrcode?scene=1&lineColor=255,135,23`;
+      resources.qrcode = await downloadImg(qrcodeUrl);
+
+      return resources;
+    }
+
+    // 绘制用于展示的海报
+    async drawTempImg() {
+      // 效果图宽、高
+      const baseWidth = 375;
+      const baseHeight = 530;
+
+      // 当前设备下canvas的宽高
+      const canvasWidth = wepy.getSystemInfoSync().windowWidth;
+      const ratio = canvasWidth / baseWidth;
+      const canvasHeight = baseHeight * ratio;
+
+      this.canvasHeight = canvasHeight;
+
+      // 绘制上下文
+      const ctx = wepy.createCanvasContext('poster-canvas');
+      // 绘制海报的素材
+      const resources = await this.fetchResources();
+
+      // 绘制大背景
+      ctx.beginPath();
+      ctx.drawImage(resources.whole, 0, 0, canvasWidth, canvasHeight);
+
+      // 绘制头像背景
+      const bg_avatar_width = 84 * ratio;
+      const bg_avatar_left = (canvasWidth - bg_avatar_width) / 2;
+      const bg_avatar_top = 68 * ratio;
+      ctx.beginPath();
+      ctx.drawImage(resources.avatarBg, bg_avatar_left, bg_avatar_top, bg_avatar_width, bg_avatar_width);
+
+      // 绘制头像
+      const avatar_width = 62 * ratio;
+      const avatar_left = canvasWidth / 2;
+      const avatar_top = 79 * ratio + avatar_width / 2;
+      clipAvatar({
+        ctx: ctx,
+        img: resources.avatar,
+        x: avatar_left,
+        y: avatar_top,
+        r: avatar_width / 2
+      });
+
+      // 绘制皇冠
+      const bg_crown_width = 48 * ratio;
+      const bg_crown_height = 45 * ratio;
+      const bg_crown_left = (canvasWidth - bg_avatar_width) / 2 - (bg_crown_width - bg_avatar_width / 2 + 4);
+      const bg_crown_top = 58 * ratio;
+      ctx.beginPath();
+      ctx.drawImage(resources.crown, bg_crown_left, bg_crown_top, bg_crown_width, bg_crown_height);
+
+      // 绘制昵称
+      ctx.beginPath();
+      ctx.setFillStyle('#fff');
+      ctx.setFontSize(14);
+      ctx.setTextAlign('center');
+      ctx.fillText(resources.nickname, canvasWidth / 2, 168 * ratio);
+
+      // 绘制排名
+      ctx.beginPath();
+      ctx.setFillStyle('#3A9CFF');
+      ctx.setFontSize(20);
+      ctx.setTextAlign('left');
+      ctx.fillText(resources.rank, 102 * ratio, 333 * ratio);
+
+      // 绘制加薪指数
+      ctx.beginPath();
+      ctx.setFillStyle('#FF6189');
+      ctx.setFontSize(56);
+      ctx.setTextAlign('left');
+      ctx.fillText(resources.quota, 95 * ratio, 460 * ratio);
+
+      // 绘制二维码
+      const qrcode_width = 82 * ratio;
+      const qrcode_left = 239 * ratio;
+      const qrcode_top = 382 * ratio;
+      ctx.beginPath();
+      ctx.drawImage(resources.qrcode, qrcode_left, qrcode_top, qrcode_width, qrcode_width);
+
+      ctx.draw(false, () => {
+        this.drawDone = true;
+        this.$apply();
+
+        wepy.hideLoading();
+
+      });
+
+    };
+
+    // 绘制用于保存的海报
+    async drawPosterImg(callback) {
+      // 效果图宽
+      const baseWidth = 375;
+      const baseHeight = 530;
+
+      // 当前设备下canvas的宽高
+      const canvasWidth = wepy.getSystemInfoSync().windowWidth;
+      const ratio = canvasWidth / baseWidth;
+
+      // 绘制上下文
+      const ctx = wepy.createCanvasContext('poster-canvas-verbose');
+
+      // 绘制用于展示的海报图
+      const showPoster = this.tempImgPath;
+      ctx.drawImage(showPoster, 0, 0, canvasWidth, baseHeight * ratio);
+
+      // 绘制底部加长的背景
+      const expandBgUrl = `${api_config.host}${this.appConfig.junior_poster_bg_expand}`;
+      const expandBg = await downloadImg(expandBgUrl);
+      ctx.drawImage(expandBg, 0, (baseHeight - 10) * ratio, canvasWidth, 50 * ratio);
+
+      ctx.draw(false, () => {
+        callback();
+      });
+
+    };
+
+    // 将canvas创建成临时图片
+    async createTempImg(canvasId) {
+      try {
+        const { errMsg, tempFilePath } = await wepy.canvasToTempFilePath({
+          canvasId: canvasId
+        });
+
+        return errMsg.includes('ok') ? tempFilePath : '';
+      }
+      catch (e) {
+        return '';
+      }
+
+    }
+
+    // 将海报图片保存到相册
+    async saveToAlbum() {
+      try {
+        const { errMsg } = await wepy.saveImageToPhotosAlbum({
+          filePath: this.posterImgPath
+        });
+
+        return errMsg.includes('ok');
+      }
+      catch (e) {
+        return false;
+      }
+    }
+
+    // 阿拉丁埋点
+    aldSendEvent(btnName) {
+      aldEvent.call(this, `初级海报页${btnName}按钮`);
+    }
+
+
+  }
+</script>
+
+<style lang="less">
+  .poster {
+    position: relative;
+    overflow: hidden;
+
+    // canvas
+    .poster-canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 2;
+      width: unit(750, rpx);
+    }
+
+    // 保存海报按钮容器
+    .poster-btns {
+      position: absolute;
+      left: 0;
+      top: unit(1060, rpx);
+      width: unit(750, rpx);
+      height: unit(101, rpx);
+      z-index: 3;
+      text-align: center;
+
+      image {
+        width: unit(450, rpx);
+        height: unit(101, rpx);
+      }
+    }
+
+    // 用于占满超长屏幕底部的空白
+    .poster-fix {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      z-index: 1;
+      width: unit(750, rpx);
+      height: unit(450, rpx);
+    }
+
+    // poster-canvas-verbose
+    .poster-canvas-verbose {
+      position: absolute;
+      left: unit(-1500, rpx);
+      top: 0;
+      z-index: 2;
+      width: unit(750, rpx);
+      height: unit(1140, rpx);
+    }
+
+  }
+
+</style>

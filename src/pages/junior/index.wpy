@@ -1,0 +1,573 @@
+<template>
+  <view class="junior">
+    <form report-submit
+          @submit="handleFormSubmit">
+      <view class="junior-form clearfix">
+        <!-- 省份选择 -->
+        <view class="form-province" @tap="searchProvince">
+          <icon class="iconfont icon-dingwei"></icon>
+          <!-- 名称 -->
+          <text class="province-name">{{ provinceName }}</text>
+          <!-- 三角 -->
+          <view class="province-caret"></view>
+        </view>
+
+        <!-- 输入表单 -->
+        <view class="form-inputs">
+          <!-- 准考证 -->
+          <view class="inputs-id">
+            <!-- 输入框组 -->
+            <view class="id-group">
+              <input class="group-input"
+                     placeholder="{{atPlaceholder}}"
+                     placeholder-class="place-holder"
+                     type="idcard"
+                     value="{{ atNO }}"
+                     @input="handleInputAt"></input>
+
+              <!-- 准考证文本框清空按钮 -->
+              <view class="group-clear"
+                    hidden="{{ !atNO }}"
+                    @tap="handleClearInputAt">×
+              </view>
+            </view>
+
+            <!-- 准考证输入提示文案 -->
+            <view class="id-tips">{{ atTips }}</view>
+          </view>
+
+          <!-- 身份证 -->
+          <view class="inputs-id">
+            <!-- 输入框组 -->
+            <view class="id-group">
+              <input class="group-input"
+                     placeholder="{{ idPlaceholder }}"
+                     placeholder-class="place-holder"
+                     type="idcard"
+                     value="{{ idNO }}"
+                     @input="handleInput"></input>
+
+              <!-- 身份证文本框清空按钮 -->
+              <view class="group-clear"
+                    hidden="{{ !idNO }}"
+                    @tap="handleClearInput">×
+              </view>
+            </view>
+
+            <!-- 身份证输入提示文案 -->
+            <view class="id-tips">{{ idTips }}</view>
+          </view>
+        </view>
+
+        <!-- 最近查询记录按钮 -->
+        <view class="form-score"
+              data-name="最近查询记录"
+              @tap="handleMyScore">{{ myScore }}
+        </view>
+      </view>
+
+      <!-- 查询按钮容器 -->
+      <view class="junior-btns">
+        <!-- 查询按钮 -->
+        <button wx:if="{{ gotTelephone }}"
+                class="btn-search"
+                data-name="查询"
+                form-type="submit"
+                @tap="handleSearch">查询
+        </button>
+        <button wx:else
+                class="btn-search"
+                data-name="查询"
+                form-type="submit"
+                open-type="getPhoneNumber"
+                @getphonenumber="getSearchPhoneNumber">查询
+        </button>
+      </view>
+
+      <!-- 预约按钮容器 -->
+      <view class="junior-reserve"
+            style="margin-left: {{ reserveMarginLeft }}rpx;">
+        <!-- 预约按钮 -->
+        <button wx:if="{{ gotTelephone }}"
+                class="reserve-btn"
+                data-name="预约"
+                form-type="submit"
+                @tap="handleReserve">
+          <image class="btn-bg" src="{{  appointmentBtn  }}"></image>
+        </button>
+
+        <button wx:else
+                class="reserve-btn"
+                data-name="预约"
+                form-type="submit"
+                open-type="getPhoneNumber"
+                @getphonenumber="getReservePhoneNumber">
+          <image class="btn-bg" src="{{  appointmentBtn  }}"></image>
+        </button>
+
+      </view>
+    </form>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import { getProvinceName, getProvinceCode } from '../../utils/province';
+  import { getJuniorResults, postFormId, saveTelephone } from '../../apis';
+  import api_config from '../../apis/config';
+  import aldEvent from '../../utils/ald';
+
+  export default class Search extends wepy.page {
+    config = {
+      navigationBarBackgroundColor: '#125FE6',
+      navigationBarTextStyle: 'white',
+      navigationBarTitleText: '人力资源成绩查询',
+      disableScroll: true
+    };
+
+    data = {
+      // 省份名称
+      provinceName: '正在定位...',
+      // 省份编码
+      provinceCode: '',
+      // 身份证号码
+      idNO: '',
+      //准考证号码
+      atNO:'',
+      // 身份证号提示
+      idTips: '',
+      //准考证号提示
+      atTips:'',
+      // id_placeholder
+      idPlaceholder: '',
+      //Admission_placeholder 准考证
+      atPlaceholder:'',
+      // 我的成绩
+      myScore: '',
+      // 图片
+      appointmentBtn: '',
+      // 通用分享
+      shareCommon: '',
+      // formId
+      formId: '',
+      // 预约按钮容器margin-left值
+      reserveMarginLeft: -560,
+      // 是否已获取到用户手机号
+      gotTelephone: true
+    };
+
+    methods = {
+      // 选择省份
+      searchProvince() {
+        // 获取数据
+        const key = this.provinceName;
+
+        // 传递数据
+        this.$preload({ key });
+
+        // 导航到省信息页面
+        this.$navigate({ url: '../address/index' });
+      },
+      //准考证号输入事件
+      handleInputAt(e) {
+        this.atNO = e.detail.value;
+      },
+       // 准考证号清空按钮单击事件
+      handleClearInputAt() {
+        this.atNO = '';
+      },
+      // 手机号输入事件
+      handleInput(e) {
+        this.idNO = e.detail.value;
+      },
+      // 手机号清空按钮单击事件
+      handleClearInput() {
+        this.idNO = '';
+      },
+      // 最近查询记录单击事件
+      handleMyScore(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+
+        this.searchResult();
+      },
+      // 查询按钮单击事件
+      handleSearch(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+
+        this.startSearch();
+      },
+      // 预约按钮单机事件
+      handleReserve(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+
+        this.startReserve();
+      },
+      // 处理查询按钮调用微信手机号权限事件
+      async getSearchPhoneNumber(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+
+        const { encryptedData, iv } = e.detail;
+
+        //如果encryptedData不存在，则表示未授权
+        if (!encryptedData) {
+          return;
+        }
+
+        //保存手机号
+        const result = await saveTelephone({ encryptedData: encryptedData, iv: iv });
+
+        if (!result.success) {
+          wepy.showToast({ title: '服务器开小差了', icon: 'none' });
+          return;
+        }
+
+        // 改变是否需要授权获取手机号的标志
+        this.gotTelephone = true;
+        this.$parent.globalData.userInfo.telephone = true;
+        this.$apply();
+
+        // 查询成绩
+        this.startSearch();
+      },
+      // 处理预约按钮调用微信手机号权限事件
+      async getReservePhoneNumber(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+
+        const { encryptedData, iv } = e.detail;
+
+        //如果encryptedData不存在，则表示未授权
+        if (!encryptedData) {
+          return;
+        }
+
+        //保存手机号
+        const result = await saveTelephone({ encryptedData: encryptedData, iv: iv });
+
+        if (!result.success) {
+          wepy.showToast({ title: '服务器开小差了', icon: 'none' });
+          return;
+        }
+
+        // 改变是否需要授权获取手机号的标志
+        this.gotTelephone = true;
+        this.$parent.globalData.userInfo.telephone = true;
+        this.$apply();
+
+        // 预约调转
+        this.startReserve();
+      },
+      // 表单提交事件
+      async handleFormSubmit(e) {
+        const { formId } = e.detail;
+
+        // 发送formId到服务端
+        const result = await postFormId({ formid: formId });
+
+        if (!result || !result.success) {
+          console.error('发送formId失败');
+        }
+      }
+    };
+
+    onLoad() {
+      const { appConfig, userInfo } = this.$parent.globalData;
+      this.idTips = appConfig.id_tips;
+      this.atTips=appConfig.at_tips;
+      this.idPlaceholder = appConfig.id_placeholder;
+      this.atPlaceholder=appConfig.Admission_placeholder;
+      this.myScore = appConfig.my_score;
+      this.appointmentBtn = api_config.host + appConfig.classA_result;
+      this.shareCommon = api_config.host + appConfig.common_img_share_common;
+
+      this.gotTelephone = !!userInfo.telephone;
+
+    };
+
+    async onShow() {
+      // 获取省份名称
+      const provinceName = await getProvinceName();
+      // 获取省份编码
+      const provinceCode = await getProvinceCode(provinceName);
+
+      this.provinceName = provinceName;
+      this.provinceCode = provinceCode;
+
+      this.reserveMarginLeft = -20;
+
+      this.$apply();
+    }
+
+    onHide() {
+      this.reserveMarginLeft = -560;
+    }
+
+    onShareAppMessage() {
+      return {
+        title: '会计查分神器，考神眷顾，这里查也许就过了！',
+        path: '/pages/home/index',
+        imageUrl: this.shareCommon
+      };
+
+    };
+
+    // 处理查询
+    startSearch() {
+      const params = {
+        province: this.provinceCode,
+        id: this.idNO.trim()
+      };
+
+      // 如果没有输入身份证号
+      if (!params.id) {
+        wepy.showToast({ title: '请输入身份证号', icon: 'none' });
+        return;
+      }
+
+      // 查询成绩
+      this.searchResult(params);
+    };
+
+    // 处理预约
+    startReserve() {
+      const that = this;
+      wepy.showLoading({
+        title: '拼命预约中',
+        icon: 'loading',
+        mask: true
+      });
+      setTimeout(function() {
+        // 跳转到结果页
+        that.$navigate({
+          url: '../common/appointment'
+        });
+        wepy.hideLoading();
+      }, 1500);
+    };
+
+    // 查询成绩
+    async searchResult(params) {
+      // 请求成绩结果
+      const response = await getJuniorResults(params);
+
+      // http请求失败
+      if (!response) {
+        wepy.showToast({ title: '服务器开小差了', icon: 'none' });
+        return;
+      }
+
+      // 服务端返回的errorCode
+      const errorCode = response.errorCode;
+
+      // 服务端返回的errorCode等于-1，提示'服务器开小差了'
+      if (errorCode === '-1') {
+        wepy.showToast({ title: '服务器开小差了', icon: 'none' });
+        return;
+      }
+
+      // 服务端返回的errorCode等于000044，提示'不存在最近查询记录'
+      if (errorCode === '000044') {
+        wepy.showToast({ title: '不存在最近查询记录', icon: 'none' });
+        return;
+      }
+
+      // 服务端返回的errorCode等于000055，提示'未查询到成绩'
+      if (errorCode === '000055') {
+        wepy.showToast({ title: '未查询到成绩 ，请确保身份证号和省份填写正确 ', icon: 'none', duration: 3000 });
+        return;
+      }
+
+      // 服务端返回空数据，跳转到尚未公布页
+      if (!response.data) {
+        this.$navigate({ url: '../../common/noscore' });
+        return;
+      }
+
+      // 正常返回成绩，预载数据到下一个页面
+      this.$preload(response.data);
+      this.$navigate({ url: './result' });
+
+      // 将本次查询使用的省份名称和省份编码作为上一次选择的省份对象存储到storage中
+      wepy.setStorageSync('province', { key: this.provinceName, value: this.provinceCode });
+    }
+
+    // 阿拉丁埋点
+    aldSendEvent(btnName) {
+      aldEvent.call(this, `初级查询页${btnName}按钮`);
+    }
+
+  };
+</script>
+
+<style lang="less">
+  @import '../../libs/iconfont.wxss';
+
+  .junior {
+    padding: unit(40, rpx) unit(20, rpx) 0;
+
+    // 表单内容
+    .junior-form {
+      position: relative;
+      padding: unit(46, rpx) unit(28, rpx);
+      border-radius: unit(12, rpx);
+      background: #FFFFFF;
+      box-shadow: unit(2, rpx) unit(4, rpx) unit(4, rpx) unit(1, rpx) rgba(255, 132, 0, 0.05);
+
+      // 省份选择
+      .form-province {
+        height: unit(40, rpx);
+        display: flex;
+        align-items: center;
+
+        //定位图标
+        .iconfont {
+          font-size: unit(28, rpx);
+          color: #666666;
+          line-height: unit(65, rpx);
+        }
+
+        // 省份名称
+        .province-name {
+          font-size: unit(28, rpx);
+          margin: 0 unit(12, rpx);
+          color: #666666;
+        }
+
+        // 下拉小三角
+        .province-caret {
+          display: inline-block;
+          width: 0;
+          height: 0;
+          border-width: unit(10, rpx) unit(10, rpx) 0;
+          border-style: solid;
+          border-color: #666666 transparent transparent;
+        }
+
+      }
+
+      // 输入框容器
+      .form-inputs {
+        margin-top: unit(44, rpx);
+
+        // placeholder
+        .place-holder {
+          font-size: unit(24, rpx);
+          color: #C9C9C9;
+        }
+
+        // 身份证
+        .inputs-id {
+
+          // 输入框组
+          .id-group {
+            position: relative;
+            //width: unit(654, rpx);
+            border: unit(1, rpx) solid #1860E8;
+            border-radius: unit(12, rpx);
+            font-size: unit(28, rpx);
+            color: #666;
+
+            // 输入框
+            .group-input {
+              width: unit(550, rpx);
+              height: unit(85, rpx);
+              padding-left: unit(20, rpx);
+            }
+
+            // 身份证文本框清空按钮
+            .group-clear {
+              position: absolute;
+              top: unit(29, rpx);
+              right: unit(16, rpx);
+              z-index: 1000;
+              width: unit(32, rpx);
+              height: unit(32, rpx);
+              line-height: unit(31, rpx);
+              border-radius: unit(16, rpx);
+              background-color: #ddd;
+              color: #fff;
+              text-align: center;
+            }
+
+          }
+
+          // 提示文案
+          .id-tips {
+            height: unit(32, rpx);
+            line-height: unit(32, rpx);
+            margin-top: unit(24, rpx);
+            margin-bottom: unit(24, rpx);
+            font-size: unit(24, rpx);
+            font-weight: 200;
+            color: #999;
+          }
+
+        }
+
+      }
+
+      // 最近查询记录按钮
+      .form-score {
+        float: right;
+        height: unit(40, rpx);
+        margin-top: unit(44, rpx);
+        line-height: unit(40, rpx);
+        font-size: unit(28, rpx);
+        font-weight: 200;
+        color: #1860E8;
+      }
+
+    }
+
+    // 按钮容器
+    .junior-btns {
+      margin-top: unit(58, rpx);
+      text-align: center;
+
+      .btn-search {
+        width: unit(710, rpx);
+        height: unit(87, rpx);
+        line-height: unit(87, rpx);
+        background-image: linear-gradient(-238deg, #7D75FF 0%, #125FE6 100%);
+        border-radius: unit(12, rpx);
+        font-size: unit(32, rpx);
+        color: #FFFFFF;
+        font-weight: 200;
+      }
+
+    }
+
+    // 预约按钮容器
+    .junior-reserve {
+      width: unit(589, rpx);
+      height: unit(188, rpx);
+      margin-top: unit(48, rpx);
+      margin-left: unit(-560, rpx);
+      transition: all .3s ease-out .2s;
+
+      // 预约按钮
+      .reserve-btn {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        background: transparent;
+
+        .btn-bg {
+          width: 100%;
+          height: 100%;
+        }
+
+        &::after {
+          border: none;
+        }
+
+      }
+
+    }
+
+  }
+</style>

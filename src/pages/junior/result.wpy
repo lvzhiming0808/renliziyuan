@@ -1,0 +1,359 @@
+<template>
+  <view>
+    <canvas class="my-canvas" canvas-id="my-canvas"></canvas>
+    <scroll-view class="result"
+                 scroll-y>
+      <!-- 考试通过情况 -->
+      <status :status.sync="status"
+              :profile.sync="profile"
+              :imageURL.sync="imageURL"></status>
+
+      <!-- 考试得分情况 -->
+      <score class="result-scores"
+             :subjects.sync="scores"></score>
+    </scroll-view>
+
+    <!-- 通过 -->
+    <view class="result-btns" hidden="{{status != 1}}">
+      <button class="btn"
+              data-name="炫耀一下"
+              open-type="share"
+              @tap="handleFlaunt">
+        <image src="{{ showOffImg }}"></image>
+        <text>炫耀一下</text>
+      </button>
+
+      <button class="btn unique"
+              data-name="生成海报"
+              @tap="handleGeneratePoster">
+        <image src="{{ generatePosterImg }}"></image>
+        <text>生成海报</text>
+      </button>
+    </view>
+
+    <!-- 不通过 -->
+    <view class="result-btns" hidden="{{ status != 0}}">
+      <button class="btn"
+              data-name="求安慰"
+              open-type="share"
+              @tap="handleComfort">
+        <image src="{{ forComfortImg }}"></image>
+        <text>求安慰</text>
+      </button>
+
+      <!-- 跳转到轻题库 -->
+      <image class="unique-img"
+             data-name="链接到轻题库"
+             src="{{throughSecretImg}}"
+             @tap="handleNavigateToMP"></image>
+    </view>
+
+    <!-- 提示  -->
+    <view class="result_tips">{{resultTips}}</view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import api_config from '../../apis/config';
+  import status from './components/status';
+  import score from './components/score';
+  import { clipAvatar, downloadImg } from '../../utils/canvas';
+  import aldEvent from '../../utils/ald';
+
+  export default class Result extends wepy.page {
+    config = {
+      navigationBarBackgroundColor: '#ffb200',
+      navigationBarTextStyle: 'white',
+      navigationBarTitleText: '查询结果',
+      disableScroll: true
+    };
+
+    components = { status, score };
+
+    data = {
+      // 考试状态值
+      status: null,
+      // 考生信息
+      profile: null,
+      // 科目列表
+      scores: null,
+      // 图片地址
+      imageURL: {},
+      // 提示
+      resultTips: '',
+      // 生成海报 按钮图片
+      generatePosterImg: '',
+      // 炫耀一下 按钮图片
+      showOffImg: '',
+      // 求安慰 按钮图片
+      forComfortImg: '',
+      // 通过秘籍悬浮框 按钮图片
+      throughSecretImg: '',
+      // 加油 图片
+      goAhead: '',
+      // 通过 背景图片
+      shareSuccess: '',
+      // 失败 背景图片
+      shareFailure: '',
+      // 头像
+      avatar: '',
+      // 昵称
+      nickName: '',
+      // 比率
+      ratio: 0
+    };
+
+    methods = {
+      // 炫耀一下按钮单击事件
+      handleFlaunt(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+      },
+
+      // 求安慰按钮单击事件
+      handleComfort(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+      },
+
+      // 跳转到轻题库单击事件
+      handleNavigateToMP(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+
+        wx.navigateToMiniProgram({
+          appId: 'wxe27eea87a01c9030',
+          path: 'pages/homePage/homePage?from=search',
+          success(res) {
+            console.log('打开成功', JSON.stringify(res));
+          }
+        });
+
+      },
+
+      // 生成海报按钮单击事件
+      handleGeneratePoster(e) {
+        // ald
+        this.aldSendEvent(e.target.dataset.name);
+
+        // 传递考试数据到海报页
+        this.$preload(this.profile);
+
+        this.$navigate({
+          url: './poster'
+        });
+
+      }
+    };
+
+    onShareAppMessage(options) {
+      /*if(!this.shareTempFilePath){
+        wepy.showToast({ title: '服务器开小差了', icon: 'none' });
+        return;
+      }*/
+
+      console.log("==========", this.shareTempFilePath);
+
+      if (this.status == 1) {
+        return {
+          title: '我一查就通过了，你还不来？',
+          path: '/pages/home/index',
+          imageUrl: this.shareTempFilePath
+        };
+      }
+
+      return {
+        title: '我为你积攒了好运，即时生效赶紧来查！',
+        path: '/pages/home/index',
+        imageUrl: this.shareTempFilePath
+      };
+    };
+
+    onLoad(params, data) {
+      const { status, profile, scores } = data.preload;
+      // 考试结果信息
+      this.status = status;
+      this.profile = profile;
+      this.scores = scores;
+
+      //console.log('this.status is', this.status, typeof this.status);
+
+      // 配置信息
+      const appConfig = this.$parent.globalData.appConfig;
+
+      // 成功失败 牛的图片
+      this.imageURL.failureImg = api_config.host + appConfig.result_status_failure;
+      this.imageURL.successImg = api_config.host + appConfig.result_status_success;
+      this.imageURL.norelease = api_config.host + appConfig.common_img_norelease;
+
+      // 官方提示文字
+      this.resultTips = appConfig.result_safe_tips;
+
+      //成功失败  对应跳转链接图片
+      this.generatePosterImg = api_config.host + appConfig.result_status_generate_poster;
+      this.showOffImg = api_config.host + appConfig.result_status_show_off;
+      this.forComfortImg = api_config.host + appConfig.result_status_for_comfort;
+      this.throughSecretImg = api_config.host + appConfig.result_status_through_secret;
+
+      // 分享图片路径
+      this.goAhead = api_config.host + appConfig.result_status_goahead;
+      this.shareFailure = api_config.host + appConfig.result_status_share_failure;
+      this.shareSuccess = api_config.host + appConfig.result_status_share_success;
+
+      // 用户信息
+      const userInfo = this.$parent.globalData.userInfo;
+
+      // 用户昵称， 头像
+      this.nickName = userInfo.nickname;
+      this.avatar = userInfo.avatar;
+
+      this.$apply();
+
+      this.drawCanvasImage();
+
+    };
+
+    async drawCanvasImage() {
+      // 切换 成功/失败 不同的背景图片
+      let imgPath = '';
+      if (this.status === 1) {
+        imgPath = this.shareSuccess;
+      } else {
+        imgPath = this.shareFailure;
+      }
+      // 先下载网络路径的图片 （背景图片）
+      imgPath = await downloadImg(imgPath);
+
+      // 根据不同机型  做适配  画canvas图片保存成一个图片临时路径
+      const width = wx.getSystemInfoSync().windowWidth;
+      this.ratio = 750 / width;
+      const ctx = wx.createCanvasContext('my-canvas');
+      const width_px = 750 / this.ratio;
+      const height_px = 600 / this.ratio;
+      ctx.drawImage(imgPath, 0, 0, width_px, height_px);
+
+      // 先下载网络路径的图片 （头像图片）
+      this.avatar = await downloadImg(this.avatar);
+
+      // 将正方形的头像图片 截掉一部分 变成圆图
+      clipAvatar({
+        ctx: ctx,
+        img: this.avatar,
+        x: 378 / this.ratio,
+        y: 199 / this.ratio,
+        r: 100 / this.ratio
+      });
+
+      // 写昵称
+      ctx.setFontSize(46 / this.ratio);
+      ctx.setFillStyle('#FFFFFF');
+      ctx.textAlign = 'center';
+      ctx.fillText(this.nickName, 375 / this.ratio, 370 / this.ratio);
+
+      // 如果是“失败状态”   在头像头部加上一个  “加油”图片
+      if (this.status !== 1) {
+        this.goAhead = await downloadImg(this.goAhead);
+        ctx.drawImage(this.goAhead, 214 / this.ratio, 76 / this.ratio, 244 / this.ratio, 126 / this.ratio);
+      }
+
+      //画图
+      ctx.draw(false, async () => {
+        const result = await wepy.canvasToTempFilePath({
+          x: 0,
+          y: 0,
+          width: width_px,
+          height: height_px,
+          destWidth: width_px,
+          destHeight: height_px,
+          canvasId: 'my-canvas'
+        });
+        const { errMsg, tempFilePath } = result;
+        if (errMsg.includes('ok')) {
+          this.shareTempFilePath = tempFilePath;
+
+        }
+      });
+    }
+
+    // 阿拉丁埋点
+    aldSendEvent(btnName) {
+      aldEvent.call(this, `初级结果页${btnName}按钮`);
+    }
+
+  }
+</script>
+
+<style lang="less">
+  .my-canvas {
+    position: absolute;
+    left: unit(-750, rpx);
+    top: 0;
+    width: unit(750, rpx);
+    height: unit(600, rpx);
+  }
+
+  .result {
+    height: 100%;
+
+    .result-scores {
+      margin-bottom: unit(20, rpx);
+    }
+
+  }
+
+  .result-btns {
+    position: relative;
+    width: 100%;
+    margin-top: unit(172, rpx);
+    .btn {
+      display: flex;
+      margin: 0 auto unit(52, rpx) auto;
+      width: unit(540, rpx);
+      height: unit(87, rpx);
+      //line-height:unit(87, rpx);
+      justify-content: center;
+      align-items: center;
+      font-size: unit(32, rpx);
+      color: #FFFFFF;
+      &:after {
+        border: 0;
+      }
+      background-image: linear-gradient(-179deg, #FFDB81 0%, #FFB500 100%);
+      border-radius: unit(100, rpx);
+      box-shadow: 0 unit(4, rpx) unit(4, rpx) 0 #F69D00;
+      image {
+        width: unit(34, rpx);
+        height: unit(34, rpx);
+        margin-right: unit(14, rpx);
+        text-shadow: 0 unit(1, rpx) 0 rgba(143, 60, 0, 0.30);
+      }
+      text {
+        text-shadow: 0 unit(1, rpx) 0 rgba(143, 60, 0, 0.30);
+      }
+    }
+    .unique {
+      background-image: linear-gradient(-179deg, #FFA38E 0%, #FF7047 100%);
+      box-shadow: 0 unit(4, rpx) unit(4, rpx) 0 #F65C2F;
+    }
+    .unique-img {
+      position: absolute;
+      top: unit(105, rpx);
+      right: unit(10, rpx);
+      width: unit(110, rpx);
+      height: unit(121, rpx);
+
+    }
+  }
+
+  .result_tips {
+    position: fixed;
+    bottom: unit(36, rpx);
+    width: 100%;
+    text-align: center;
+    font-size: unit(24, rpx);
+    color: #999999;
+    line-height: unit(33, rpx);
+    letter-spacing: unit(1, rpx);
+  }
+</style>

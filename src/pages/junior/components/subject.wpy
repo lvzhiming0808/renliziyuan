@@ -1,0 +1,118 @@
+<template>
+  <!-- 考试科目展示 -->
+  <view class="subject {{ subject.score < subject.passline ? 'failure' : '' }}">
+    <!-- 得分、合格线 -->
+    <view class="subject-score" wx:if="{{subject.status != 3}}">
+      <text class="score-got">{{ subject.score }}</text>
+      <text class="score-line">/{{ subject.passline }}</text>
+    </view>
+    <!-- 缺考状态 -->
+    <view class="subject-lack-test" wx:else>
+     缺考
+    </view>
+
+    <!-- 科目名、考试年份 -->
+    <view class="subject-info">
+      <view class="info-name">{{ subject.subject }}</view>
+      <view class="info-year">({{ subject.year }})</view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class Subject extends wepy.component {
+    props = {
+      // 考试科目
+      subject: Object
+    };
+
+  }
+</script>
+
+<style lang="less">
+  .subject {
+    display: inline-block;
+    width: unit(338, rpx);
+    border-radius: unit(12, rpx);
+    background-color: #fff;
+    box-shadow: unit(2, rpx) unit(4, rpx) unit(4, rpx) 0 rgba(76, 179, 255, .1);
+
+    // 得分、合格线
+    .subject-score {
+      height: unit(206, rpx);
+      text-align: center;
+
+      // 得分
+      .score-got {
+        height: unit(206, rpx);
+        line-height: unit(206, rpx);
+        font-size: unit(100, rpx);
+        color: #4CB3FF;
+        font-weight:500;
+      }
+
+      // 合格线
+      .score-line {
+        font-size: unit(34, rpx);
+        color: #ddd;
+      }
+
+    }
+
+    //缺考
+    .subject-lack-test {
+      height: unit(206, rpx);
+      line-height:unit(206, rpx);
+      text-align: center;
+      font-size: unit(80, rpx);
+      color: #FF8B75;
+    }
+
+    // 科目名、考试年份
+    .subject-info {
+      padding: unit(12, rpx) 0 unit(6, rpx);
+      border-radius: 0 0 unit(12, rpx) unit(12, rpx);
+      background: #4CB3FF;
+      font-weight: 200;
+      color: #fff;
+      text-align: center;
+
+      // 科目名
+      .info-name {
+        height: unit(50, rpx);
+        line-height: unit(50, rpx);
+        font-size: unit(36, rpx);
+      }
+
+      // 考试年份
+      .info-year {
+        height: unit(32, rpx);
+        line-height: unit(32, rpx);
+        font-size: unit(24, rpx);
+      }
+
+    }
+
+    // 不合格状态
+    &.failure {
+      box-shadow: unit(2, rpx) unit(4, rpx) unit(4, rpx) 0 rgba(255, 139, 117, .1);
+
+      // 得分、合格线
+      .subject-score {
+        .score-got {
+          color: #FF8B75;
+        }
+      }
+
+      // 科目名、考试年份
+      .subject-info {
+        background-color: #FF8B75;
+      }
+
+    }
+
+  }
+
+</style>

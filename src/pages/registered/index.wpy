@@ -1,0 +1,40 @@
+<template>
+  <view>
+    注册表单页
+    <button @tap="navigateToProfessional">专业阶段历年成绩查询</button>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class Search extends wepy.page {
+    config = {};
+
+    components = {};
+
+    mixins = [];
+
+    data = {};
+
+    computed = {};
+
+    methods = {
+      navigateToProfessional() {
+        this.$navigate({ url: '../professional/search' });
+      }
+    };
+
+    events = {};
+
+    onLoad() {
+    };
+
+    onReady() {
+    };
+  }
+</script>
+
+<style lang="less">
+
+</style>

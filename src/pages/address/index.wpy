@@ -1,0 +1,179 @@
+<template>
+  <view class="address-letter">
+    <text class="unique">当前城市</text>
+  </view>
+  <view class="address-name">{{aimCity}}</view>
+
+  <scroll-view  style="height:{{scrollHeight}}rpx"  scroll-y="true" scroll-into-view="{{toView}}">
+    <view  wx:for="{{provinceData}}" wx:for-item="item" wx:key="key">
+      <view id="{{item.index}}" class="address-letter">{{item.index}}</view>
+      <view wx:for="{{item.items}}" wx:for-item="name" wx:key="key"
+            bindtap="clickAddressName({{name}})">
+        <view class="address-name">{{name.key}}</view>
+        <view class="address-wrapper"></view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="index">
+    <view class="index-word" wx:for="{{provinceData}}" wx:for-item="ano" wx:key="key" bindtap="choiceWordindex"
+          data-wordindex="{{ano.index}}"> {{ano.index}}
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import { getProvinceList } from '../../apis';
+  import api_config from '../../apis/config';
+
+  export default class Address extends wepy.page {
+    config = {
+      navigationBarBackgroundColor: '#ffb200',
+      navigationBarTextStyle: 'white',
+      navigationBarTitleText: '选择省份',
+      disableScroll: true
+    };
+
+    components = {};
+
+    mixins = [];
+
+    data = {
+      aimCity: '',
+      tabName: 0,
+      toView: 'A',
+      //全国省信息，从接口里拿
+      provinceData: [],
+      scrollHeight:0,
+      shareCommon:''
+    };
+
+    computed = {};
+
+    methods = {
+      choiceWordindex(event) {
+        let wordindex = event.currentTarget.dataset.wordindex;
+        this.toView = wordindex;
+      },
+
+      clickAddressName(name) {
+        /*let addressname = event.currentTarget.dataset.addressname;*/
+        var t = this;
+        t.aimCity = name.key;
+        try {
+          wepy.setStorageSync('province', JSON.parse(JSON.stringify(name)));
+        } catch (e) {
+          console.error('缓存失败');
+        }
+        wx.navigateBack({
+          url: '../junior/index'
+        });
+      }
+    };
+
+    events = {};
+
+    onShareAppMessage() {
+      return {
+        title: '会计查分神器，考神眷顾，这里查也许就过了！',
+        path: '/pages/home/index',
+        imageUrl: this.shareCommon
+      };
+
+    };
+
+    async onLoad(params, data) {
+      const t = this;
+      const { key } = data.preload;
+      t.aimCity = key;
+
+      const provinceList = await getProvinceList();
+      t.provinceData = provinceList;
+
+      const width = wx.getSystemInfoSync().windowWidth;
+      const temp = 750/width;
+      //console.log("temp is", temp);
+
+
+      //  将px 转换为 rpx
+      t.scrollHeight = (wx.getSystemInfoSync().windowHeight)*temp - 138;
+      t.$apply();
+
+      const appConfig = this.$parent.globalData.appConfig;
+      this.shareCommon = api_config.host + appConfig.common_img_share_common;
+    };
+
+  }
+</script>
+
+<style lang="less">
+  scroll-view {
+    //height: unit(1068, rpx);
+    //height:calc(100vh - 138rpx);
+    float: left;
+    width: 100%;
+  }
+
+  .address-letter {
+    line-height: unit(60, rpx);
+    background: #F5F5F5;
+    font-size: unit(24, rpx);
+    color: #FF8D00;
+    padding-left: unit(21, rpx);
+  }
+
+  .unique {
+    color: #888888;
+  }
+
+  .unique::before {
+    content: "|";
+    color: #FF8D00;
+    margin-right: unit(12, rpx);
+    //line-height:unit(60, rpx);
+    font-weight: bold;
+  }
+
+  .address-name {
+    display: block;
+    line-height: unit(78, rpx);
+    background: #FFFFFF;
+    font-size: unit(28, rpx);
+    color: #333333;
+    /*border-bottom:1px solid #EEEEEE;*/
+    padding-left: unit(37, rpx);
+  }
+
+  .address-wrapper{
+    display: block;
+    width: unit(650, rpx);
+    height: unit(2, rpx);
+    background-color: #F1F1F1;
+    margin-left:unit(37, rpx);
+  }
+
+
+  .aim-bg {
+    background: #999999;
+  }
+
+  .index {
+    float: right;
+    position: fixed;
+    right: 0;
+    top: unit(140, rpx);
+    //margin-top: 20%;
+    //margin-right: 10rpx;
+    color: #CACACA;;
+    font-size: unit(24, rpx);
+    width: unit(60, rpx);
+    //border:1px solid red;
+    text-align: center;
+
+    .index-word {
+      margin-top: unit(25, rpx);
+    }
+
+  }
+</style>

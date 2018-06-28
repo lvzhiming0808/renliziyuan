@@ -1,0 +1,112 @@
+<template>
+  <view class="box">
+    <view class="circle"></view>
+    <view class="content">
+      <image class="success-image" src="{{ appointmentSuccess  }}"></image>
+      <view class="success-word">预约成功</view>
+      <view class="content-line"></view>
+      <view class="content-tips">您已预约成功，成绩公布后我们将在第一时间通知您，预祝您旗开得胜！</view>
+    </view>
+
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import api_config from '../../apis/config';
+
+  export default class Appointment extends wepy.page {
+    config = {
+      navigationBarTitleText: '预约成功',
+      disableScroll: true
+    };
+
+    data = {
+      appointmentSuccess:'',
+      shareCommon:''
+    };
+    onShareAppMessage() {
+      return {
+        title: '会计查分神器，考神眷顾，这里查也许就过了！',
+        path: '/pages/home/index',
+        imageUrl: this.shareCommon
+      };
+
+    };
+
+    onLoad() {
+      const appConfig = this.$parent.globalData.appConfig;
+      this.appointmentSuccess = api_config.host + appConfig.common_img_appointment_success;
+      this.shareCommon = api_config.host + appConfig.common_img_share_common;
+      //this.appointmentSuccess = 'https://query.mp.zmgongzuoshi.top/frontres/images/common/appointment_success.png';
+    }
+
+  }
+</script>
+
+<style lang="less">
+  //  外层盒子
+  .box {
+    width:100%;
+    height:unit(960, rpx);
+    overflow:hidden;
+
+    //  椭圆
+    .circle {
+      width: unit(1643, rpx);
+      height: unit(1089, rpx);
+      border-radius: 50% 50%;
+      margin-left:unit(-437, rpx);
+      margin-top:unit(-130, rpx);
+      background-image: linear-gradient(#125FE6 0%, #7D75FF 100%);
+    }
+
+    //  内容
+    .content{
+      position:fixed;
+      left:unit(125, rpx);
+      top:unit(136, rpx);
+      width:unit(500, rpx);
+      height:unit(635, rpx);
+      //border:1px solid red;
+
+      //  图片
+      .success-image{
+        margin:0 0 unit(38, rpx) unit(115, rpx);
+        width: unit(279, rpx);
+        height: unit(279, rpx);
+      }
+
+      //  文字
+      .success-word {
+        line-height: unit(100, rpx);
+        text-align: center;
+        font-size:unit(72, rpx);
+        color: #FFFFFF;
+        //font-weight:bold;
+      }
+
+      //线条
+      .content-line{
+        width:100%;
+        border:unit(2, rpx) solid #FFFFFF;
+        margin:unit(28, rpx) 0;
+
+      }
+
+      .content-tips{
+        width:unit(462, rpx);
+        line-height:unit(52, rpx);
+        font-size: unit(32, rpx);
+        color: #FFFFFF;
+        margin:0 auto;
+      }
+
+    }
+
+
+
+  }
+
+</style>

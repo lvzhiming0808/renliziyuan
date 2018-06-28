@@ -1,0 +1,33 @@
+<template>
+  <!-- 考试得分情况 -->
+  <view class="score">
+    <repeat for="{{ subjects }}" key="index">
+      <subject :subject="item" class="subject"></subject>
+    </repeat>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import subject from './subject';
+
+  export default class Score extends wepy.component {
+    components = { subject };
+
+    props = {
+      // 考试科目列表
+      subjects: Array
+    };
+
+  }
+</script>
+
+<style lang="less">
+  .score {
+    margin-left: -unit(26, rpx);
+
+    .subject {
+      margin: unit(36, rpx) 0 0 unit(26, rpx);
+    }
+  }
+</style>

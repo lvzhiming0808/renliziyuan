@@ -1,0 +1,99 @@
+<template>
+  <!-- 首页面板组件 -->
+
+  <view class="index" @tap="informTap()">
+    <image class="index-bg" src="{{dataList.imageSrc}}" mode="aspectFit"></image>
+    <view class="index-content">
+      <view class="index-en-text">{{dataList.enTitle}}</view>
+      <view class="index-ch-text">{{dataList.chTitle}}</view>
+    </view>
+    <view class="index-icon">
+      <image class="ploygon" src="{{dataList.ploygonImg}}"></image>
+    </view>
+    <view class="icon">
+      <icon class="iconfont icon-jiantou" style="color:{{dataList.arrowColor}}"></icon>
+    </view>
+  </view>
+
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class Panel extends wepy.component {
+    props = {
+      dataList: {
+        type: Object,
+        default: null
+      },
+      ploygonImg: {
+        type: String,
+        default: ''
+      }
+    };
+
+    methods = {
+      informTap: function() {
+        this.$emit('navigateTo', this.dataList.navigateUrl);
+      }
+    };
+  }
+</script>
+
+<style lang="less">
+  @import '../../../libs/iconfont.wxss';
+  .index {
+    position: absolute;
+    left:0;
+    width:100%;
+    height:100%;
+    border-radius: unit(12, rpx);
+
+    .index-bg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .index-content {
+      position: absolute;
+      left: unit(40, rpx);
+      top: unit(44, rpx);
+      width: unit(450, rpx);
+      height: unit(100, rpx);
+      color: #FFFFFF;
+      text-align:left;
+      font-weight:200;
+      .index-en-text {
+        line-height: unit(50, rpx);
+        font-size: unit(36, rpx);
+      }
+      .index-ch-text {
+        margin-top:unit(8,rpx);
+        line-height: unit(56, rpx);
+        font-size: unit(40, rpx);
+      }
+    }
+
+    .index-icon {
+      position: absolute;
+      width: unit(103, rpx);
+      height: unit(106, rpx);
+      left: unit(40, rpx);
+      bottom: unit(38, rpx);
+      //border: 1px solid red;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      image{
+        width:unit(90,rpx);
+        height:unit(80, rpx);
+      }
+    }
+
+    .icon{
+      position:absolute;
+      left: unit(70, rpx);
+      bottom: unit(40, rpx)
+    }
+  }
+</style>

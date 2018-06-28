@@ -1,0 +1,97 @@
+<script>
+  import './libs/ald-stat';
+  import wepy from 'wepy';
+  import 'wepy-async-function';
+  import 'promise-polyfill';
+  import config from './apis/config';
+  import { getConfigList } from './apis';
+
+  export default class extends wepy.app {
+    config = {
+      pages: [
+        // 首页
+        'pages/home/index',
+        // 初、中级表单页
+        'pages/junior/index',
+        // 省份选择页
+        'pages/address/index',
+        // 预约成功页
+        'pages/common/appointment',
+        // 查询结果页
+        'pages/junior/result',
+        // 海报页面
+        'pages/junior/poster',
+        // 注册级表单页
+        'pages/registered/index',
+        // 专业阶段历年表单页
+        'pages/professional/index',
+        // 尚未公布
+        'pages/common/noscore',
+        // 敬请等待页面
+        'pages/common/pleasewait'
+
+      ],
+      window: {
+        navigationBarBackgroundColor: '#125FE6',
+        navigationBarTextStyle: '#fff',
+        navigationBarTitleText: '人力资源成绩查询',
+        //disableScroll: true
+      },
+      networkTimeout: {
+        request: 6000
+      },
+      'debug': this.debug
+    };
+
+    globalData = {
+      // 应用配置
+      appConfig: null,
+      // 用户信息
+      userInfo: null,
+      debug: false
+    };
+
+    constructor() {
+      super();
+      this.use('requestfix');
+      this.use('promisify');
+    }
+
+    onLaunch() {
+      this.debug = config.debug;
+    }
+
+    onShow() {
+      //shareTicket
+      /*wx.getShareInfo({
+        shareTicket:shareTicket
+      }, function(obj){
+        obj.errMsg
+        obj.encryptedData
+        obj.iv
+      })
+      obj.encryptedDaat.openGId
+      <open-data></open-data>
+      */
+    }
+  }
+</script>
+
+<style lang="less">
+  page {
+    background-color: #F8F8F8;
+  }
+
+  // 闭合浮动
+  .clearfix {
+    &::before,
+    &::after {
+      content: ' ';
+      display: table;
+    }
+
+    &::after {
+      clear: both;
+    }
+  }
+</style>

@@ -1,0 +1,261 @@
+<template>
+  <!-- 首页 -->
+  <view>
+    <!-- 入口列表 -->
+    <repeat for="{{ searchPageEntries }}" key="index" item="item">
+      <!-- 授权按钮 -->
+      <form report-submit="true" bindsubmit="formSubmit">
+        <button class="btn"
+                data-name="{{ item.chTitle }}"
+                data-url="{{ item.navigateUrl }}"
+                open-type="getUserInfo"
+                bindgetuserinfo="handleGetUserInfo"
+                formType="submit">
+          <panel :dataList="item" :ploygonImg="ploygonImg"></panel>
+        </button>
+      </form>
+    </repeat>
+    <view class="bottom-suspension"
+          data-name="链接到轻题库"
+          @tap="gotoMiniProgram">
+      <image src="{{ raiseImg }}"></image>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import Panel from './components/panel';
+  import { login, postFormId, getConfigList } from '../../apis';
+  import api_config from '../../apis/config';
+  import aldEvent from '../../utils/ald';
+
+  export default class Index extends wepy.page {
+
+    components = {
+      panel: Panel
+    };
+
+    data = {
+      // 各个等级查询页的入口列表
+      searchPageEntries: [],
+      // 是否已登录
+      isLogin: false,
+      // 六边形图片
+      ploygonImg: '',
+      // 加薪悬浮
+      raiseImg: '',
+      // 普通分享页
+      shareCommon: '',
+      // formid
+      formId: ''
+    };
+
+    methods = {
+      async handleGetUserInfo(e) {
+        // ald首页入口按钮埋点
+        this.aldSendEvent(e.target.dataset.name);
+
+        const { code } = await wepy.login();
+
+        const { encryptedData, iv } = e.detail;
+
+        // 如果encryptedData不存在，则表示未授权
+        if (!encryptedData) {
+          return;
+        }
+
+        // 已授权，调用登录接口
+        await this.login({ code, encryptedData, iv });
+
+        // 如果未成功获取到token(未登录成功)，则不跳转
+        if (!this.isLogin) {
+          return;
+        }
+
+        //发送formid
+        const result = await postFormId({ formid: this.formId });
+        if (!result || !result.success) {
+          console.error('提交表单失败');
+        }
+
+        // 跳转url
+        const { dataset: { url } } = e.target;
+        this.$navigate({ url });
+
+      },
+
+      //存储 formId
+      formSubmit(e) {
+        this.formId = e.detail.formId;
+      },
+
+      gotoMiniProgram(e) {
+        // ald首页链接到轻题库埋点
+        this.aldSendEvent(e.target.dataset.name);
+
+
+        wx.navigateToMiniProgram({
+          appId: 'wxe27eea87a01c9030',
+          path:'pages/homePage/homePage?from=search',
+          success(res) {
+            console.log('打开成功', JSON.stringify(res));
+          }
+        });
+      }
+
+    };
+
+    onShareAppMessage() {
+      return {
+        title: '会计查分神器，考神眷顾，这里查也许就过了！',
+        path: '/pages/home/index',
+        imageUrl: this.shareCommon
+      };
+
+    };
+
+    async onLoad() {
+      const appConfig = await this.getAppConfig();
+
+      this.$parent.globalData.appConfig = appConfig;
+
+      this.ploygonImg = api_config.host + appConfig.home_img_ploygon;
+
+      this.raiseImg = api_config.host + appConfig.home_img_raise;
+
+      this.shareCommon = api_config.host + appConfig.common_img_share_common;
+
+      this.setHomeConfig(appConfig);
+
+      this.$apply();
+    }
+
+    // 获取并格式化应用配置数据
+    async getAppConfig() {
+      const configs = await getConfigList();
+      const appConfig = {};
+
+      configs.forEach((item) => {
+        Object.assign(appConfig, { [item.key]: item.value });
+      });
+
+      return appConfig;
+    }
+
+    // 设置首页相关配置项
+    setHomeConfig(config) {
+      const t = this, objFirst = {}, objSecond = {}, objThird = {}, objsi = {}, objwu = {};
+      objFirst.imageSrc = api_config.host + config.home_img_classA_huam;
+      objFirst.enTitle = config.home_title_human;
+      objFirst.chTitle = config.home_title_human_A_zh;
+      objFirst.ploygonImg = api_config.host + config.home_img_junior_ploygon;
+      objFirst.navigateUrl = '../junior/index';
+      objFirst.arrowColor = '#FF7F00';
+
+      objSecond.imageSrc = api_config.host + config.home_img_classB_huam;
+      objSecond.enTitle = config.home_title_human;
+      objSecond.chTitle = config.home_title_human_B_zh;
+      objSecond.ploygonImg = api_config.host + config.home_img_intermediate_ploygon;
+      objSecond.navigateUrl = '../common/pleasewait';
+      objSecond.arrowColor = '#24A0FF';
+
+      objThird.imageSrc = api_config.host + config.home_img_classC_huam;
+      objThird.enTitle = config.home_title_human;
+      objThird.chTitle = config.home_title_human_C_zh;
+      objThird.ploygonImg = api_config.host + config.home_img_certified_ploygon;
+      objThird.navigateUrl = '../common/pleasewait';
+      objThird.arrowColor = '#F23111';
+
+      objsi.imageSrc = api_config.host + config.home_img_classD_huam;
+      objsi.enTitle = config.home_title_human;
+      objsi.chTitle = config.home_title_human_D_zh;
+      objsi.ploygonImg = api_config.host + config.home_img_certified_ploygon;
+      objsi.navigateUrl = '../common/pleasewait';
+      objsi.arrowColor = '#F23111';
+
+      objwu.imageSrc = api_config.host + config.home_img_classE_huam;
+      objwu.enTitle = config.home_title_human;
+      objwu.chTitle = config.home_title_human_E_zh;
+      objwu.ploygonImg = api_config.host + config.home_img_certified_ploygon;
+      objwu.navigateUrl = '../common/pleasewait';
+      objwu.arrowColor = '#F23111';
+
+      t.searchPageEntries.push(objFirst);
+      t.searchPageEntries.push(objSecond);
+      t.searchPageEntries.push(objThird);
+      t.searchPageEntries.push(objsi);
+      t.searchPageEntries.push(objwu);
+
+    }
+
+    // 登录获取token
+    async login(params) {
+      if (this.isLogin) {
+        return;
+      }
+
+      // code
+      const { code } = await wepy.login();
+
+      try {
+        // 调用login接口
+        const { data: { isFirst, token, profile } } = await login({ code });
+
+        // 老用户
+        if (!isFirst) {
+          wepy.setStorageSync('Authorization', token);
+          this.$parent.globalData.userInfo = JSON.parse(profile);
+          this.isLogin = true;
+          return;
+        }
+
+        // 新用户
+        const { data: { token: newToken, profile: newProfile } } = await login(params);
+        wepy.setStorageSync('Authorization', newToken);
+        this.$parent.globalData.userInfo = JSON.parse(newProfile);
+        this.isLogin = true;
+      }
+      catch (e) {
+        this.isLogin = false;
+        console.error('登录失败');
+      }
+
+    }
+
+    // 阿拉丁埋点
+    aldSendEvent(btnName) {
+      aldEvent.call(this, `首页${btnName}按钮`);
+    }
+
+  }
+</script>
+
+<style lang="less">
+  .btn {
+    position: relative;
+    margin: unit(24, rpx) auto;
+    width: unit(710, rpx);
+    height: unit(362, rpx);
+    outline: none;
+    box-shadow: none;
+    background: #F8F8F8;
+  }
+
+  .btn::after {
+    border: 0
+  }
+
+  .bottom-suspension {
+    position: fixed;
+    top: unit(706, rpx);
+    right: unit(9.5, rpx);
+    width: unit(143.5, rpx);
+    height: unit(131.5, rpx);
+    image {
+      width: unit(143.5, rpx);
+      height: unit(131.5, rpx);
+    }
+  }
+
+</style>

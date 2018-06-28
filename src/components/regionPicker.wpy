@@ -1,0 +1,32 @@
+<template>
+  <!-- 省份选择组件 -->
+
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class Page extends wepy.component {
+    components = {};
+
+    mixins = [];
+
+    data = {};
+
+    computed = {};
+
+    methods = {};
+
+    events = {};
+
+    onLoad() {
+    };
+
+    onReady() {
+    };
+  }
+</script>
+
+<style lang="less">
+
+</style>

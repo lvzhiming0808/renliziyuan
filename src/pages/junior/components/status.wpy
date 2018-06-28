@@ -1,0 +1,165 @@
+<template>
+  <!-- 考试通过情况 -->
+  <view class="status">
+    <!-- 考试结果 -->
+    <view class="status-result">{{ result }}</view>
+
+    <!-- 考生信息 -->
+    <view class="status-profile clearfix">
+      <!-- 信息详情 -->
+      <view class="profile-info">
+        <!-- 姓名 -->
+        <view class="info-name">{{ profile.name }}</view>
+        <!-- 准考证号 -->
+        <view class="info-admission">准考证: {{ profile.admission }}</view>
+        <!-- 证件号 -->
+        <view class="info-id">证件号: {{ profile.id }}</view>
+      </view>
+
+      <!-- 状态图片 -->
+      <view class="profile-decoration">
+        <image class="decoration-img"
+               src="{{ imgUrl }}"></image>
+      </view>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class Status extends wepy.component {
+    props = {
+      // 考试状态值
+      status: Number,
+      // 考生信息
+      profile: Object,
+      //图片地址
+      imageURL: Object
+    };
+
+    computed = {
+      // 根据考试状态值返回对应的考试结果描述
+      result() {
+        let result;
+
+        switch (this.status) {
+          case 0:
+            result = '未通过';
+            break;
+          case 1:
+            result = '恭喜拿证';
+            break;
+          default:
+            result = '';
+            break;
+        }
+
+        return result;
+      },
+
+      // 根据考试状态值匹配对应的状态图片
+      imgUrl() {
+        let url;
+
+        switch (this.status) {
+          case 0:
+            url = this.imageURL.failureImg;
+            break;
+          case 1:
+            url = this.imageURL.successImg;
+            break;
+          default:
+            url = '';
+            break;
+        }
+
+        return url;
+      }
+    };
+
+  }
+</script>
+
+<style lang="less">
+  // 考试通过情况
+  .status {
+    background-image: linear-gradient(180deg, #FFB200 0%, #FF8800 100%);
+    box-shadow: 0 4px 4px 1px rgba(189, 101, 0, 0.10);
+
+    // 考试结果
+    .status-result {
+      height: unit(100, rpx);
+      line-height: unit(100, rpx);
+      font-size: unit(72, rpx);
+      color: #FFFFFF;
+      text-align: center;
+    }
+
+    // 考生信息
+    .status-profile {
+      padding-top: unit(4, rpx);
+
+      // 信息详情
+      .profile-info {
+        float: left;
+        width: unit(400, rpx);
+        margin-top: unit(24, rpx);
+        padding-left: unit(50, rpx);
+        color: rgba(255, 255, 255, .9);
+        font-weight: 200;
+
+        // 姓名
+        .info-name {
+          position: relative;
+          height: unit(50, rpx);
+          line-height: unit(50, rpx);
+          font-size: unit(36, rpx);
+
+          &::after {
+            content: ' ';
+            position: absolute;
+            left: 0;
+            bottom: unit(-4, rpx);
+            width: 100%;
+            border-bottom: solid rgba(255, 255, 255, .5) unit(3, rpx);
+          }
+        }
+
+        // 准考证、证件号
+        .info-admission,
+        .info-id {
+          height: unit(40, rpx);
+          margin-top: unit(18, rpx);
+          line-height: unit(40, rpx);
+          font-size: unit(28, rpx);
+        }
+
+      }
+
+      // 状态图片
+      .profile-decoration {
+        float: right;
+        position: relative;
+        width: unit(300, rpx);
+        height: unit(215, rpx);
+        overflow: hidden;
+
+        // 图片
+        .decoration-img {
+          position: absolute;
+          left: 50%;
+          bottom: 0;
+          width: unit(225, rpx);
+          height: unit(225, rpx);
+          margin-left: unit(-107, rpx);
+          margin-bottom: unit(-10, rpx);
+        }
+      }
+
+    }
+
+  }
+
+</style>

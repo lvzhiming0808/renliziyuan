@@ -1,0 +1,33 @@
+<template>
+  专业阶段历年表单页
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class Search extends wepy.page {
+    config = {};
+
+    components = {};
+
+    mixins = [];
+
+    data = {};
+
+    computed = {};
+
+    methods = {};
+
+    events = {};
+
+    onLoad() {
+    };
+
+    onReady() {
+    };
+  }
+</script>
+
+<style lang="less">
+
+</style>

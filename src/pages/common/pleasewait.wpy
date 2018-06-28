@@ -1,0 +1,83 @@
+<template>
+  <view class="box">
+    <view class="circle"></view>
+    <image class="iconfont-image" src="{{ pleaseWaitIconFont  }}"></image>
+    <image class="word-image" src="{{ pleaseWait  }}"></image>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import api_config from '../../apis/config';
+
+  export default class PleaseWait extends wepy.page {
+    config = {
+      navigationBarTitleText: '敬请期待',
+      disableScroll: true,
+      shareCommon:''
+    };
+
+    data = {
+      pleaseWait:'',
+      pleaseWaitIconFont:''
+    };
+
+    onShareAppMessage() {
+      return {
+        title: '会计查分神器，考神眷顾，这里查也许就过了！',
+        path: '/pages/home/index',
+        imageUrl: this.shareCommon
+      };
+
+    };
+
+    onLoad() {
+      const appConfig = this.$parent.globalData.appConfig;
+      this.pleaseWait = api_config.host + appConfig.common_img_pleasewait;
+      this.pleaseWaitIconFont = api_config.host + appConfig.common_img_pleasewait_iconfont;
+      this.shareCommon = api_config.host + appConfig.common_img_share_common;
+     /* this.pleaseWaitIconFont = '../../images/a.png';
+      this.pleaseWait = 'https://query.mp.zmgongzuoshi.top/frontres/images/common/pleasewait.png';*/
+    }
+
+  }
+</script>
+
+<style lang="less">
+  //  外层盒子
+  .box {
+    width:100%;
+    height:unit(960, rpx);
+    overflow:hidden;
+
+    //  椭圆
+    .circle {
+      width: unit(1643, rpx);
+      height: unit(1089, rpx);
+      border-radius: 50% 50%;
+      margin-left:unit(-437, rpx);
+      margin-top:unit(-130, rpx);
+      background-image: linear-gradient(#125FE6 0%, #7D75FF 100%);
+    }
+
+    //  字体图标
+    .iconfont-image{
+      position: fixed;
+      left: unit(184, rpx);
+      top: unit(265, rpx);
+      width: unit(382, rpx);
+      height: unit(312, rpx);
+    }
+
+    //文字图片
+    .word-image {
+      position: fixed;
+      left: unit(111, rpx);
+      top: unit(620, rpx);
+      width: unit(525, rpx);
+      height: unit(44, rpx);
+
+    }
+  }
+
+</style>

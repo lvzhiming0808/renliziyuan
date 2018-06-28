@@ -1,0 +1,70 @@
+<template>
+  <view class="box">
+    <view class="circle"><image class="pic_image" src="{{noReleaseImg}}"></image></view>
+    <image class="word_image" src="{{noScore}}"></image>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+  import api_config from '../../apis/config';
+
+  export default class NoScore extends wepy.page {
+    config = {
+      navigationBarBackgroundColor: '#ffb200',
+      navigationBarTextStyle: 'white',
+      navigationBarTitleText: '查询结果',
+      disableScroll: true
+    };
+
+    data = {
+      noReleaseImg:'',
+      noScore:''
+    };
+
+    onLoad() {
+      /*const appConfig = this.$parent.globalData.appConfig;
+      this.noReleaseImg = api_config.host + appConfig.common_img_norelease;
+      this.noScore = api_config.host + appConfig.common_img_noscore;*/
+      this.noScore = ' https://query.mp.zmgongzuoshi.top/frontres/images/common/noscore.png';
+      this.noReleaseImg = ' https://query.mp.zmgongzuoshi.top/frontres/images/common/norelease.png'
+    }
+  }
+</script>
+
+<style lang="less">
+  .box {
+    //display:flex;
+    width:unit(1643, rpx);
+    height:unit(1089, rpx);
+    margin-top:unit(-258, rpx);
+    margin-left:unit(-370, rpx);
+
+    .circle{
+      position:relative;
+      overflow:hidden;
+      height:unit(1089, rpx);
+      width:unit(1463, rpx);
+      border-radius:50% 50%;
+      background-image: linear-gradient(#125FE6 0%, #7D75FF 100%);
+    }
+
+    .word_image{
+      position: fixed;
+      width: unit(512, rpx);
+      height: unit(60, rpx);
+      left:unit(120, rpx);
+      top:unit(111, rpx);
+
+    }
+
+    .pic_image{
+      position:absolute;
+      width: unit(645, rpx);
+      height: unit(606, rpx);
+      left:unit(420, rpx);
+      bottom:unit(-25, rpx);
+    }
+  }
+
+</style>
